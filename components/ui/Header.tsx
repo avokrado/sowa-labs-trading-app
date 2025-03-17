@@ -2,6 +2,7 @@ import { RootState } from "@/store";
 import { useSelector } from "react-redux";
 import React from "react";
 import { View, Text } from "react-native";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 function Header() {
   const currentBalance = useSelector(
@@ -29,11 +30,8 @@ function Header() {
           {currentBalance} <Text style={{ fontWeight: "semibold" }}>BTC</Text>
         </Text>
         <Text>
-          {(currentBalance * currentPrice).toLocaleString("de-DE", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}{" "}
-          <Text style={{ fontWeight: "semibold" }}>EUR</Text>
+          {formatCurrency(currentBalance * currentPrice)}{" "}
+          <Text style={{ fontWeight: "semibold" }}>€</Text>
         </Text>
       </View>
     </View>

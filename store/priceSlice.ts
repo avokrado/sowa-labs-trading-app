@@ -1,8 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+interface ChartData {
+  timestamp: number;
+  price: number;
+}
 interface PriceState {
   currentPrice: number;
-  chartData: number[]; // or {x: number, y: number}[] if you prefer
+  chartData: ChartData[]; // or {x: number, y: number}[] if you prefer
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
   wsStatus: "connected" | "disconnected" | "connecting";
@@ -20,6 +24,12 @@ const priceSlice = createSlice({
   name: "price",
   initialState,
   reducers: {
+    updateChartData: (state, action: PayloadAction<number[][]>) => {
+      state.chartData = action.payload.map(([timestamp, price]) => ({
+        timestamp,
+        price,
+      }));
+    },
     updatePrice: (state, action: PayloadAction<number>) => {
       state.currentPrice = action.payload;
       state.status = "succeeded";
@@ -34,5 +44,6 @@ const priceSlice = createSlice({
   },
 });
 
-export const { updatePrice, setWsStatus, setError } = priceSlice.actions;
+export const { updateChartData, updatePrice, setWsStatus, setError } =
+  priceSlice.actions;
 export default priceSlice.reducer;
