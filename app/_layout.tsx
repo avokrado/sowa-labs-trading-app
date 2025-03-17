@@ -11,7 +11,7 @@ import Header from "@/components/ui/Header";
 import { store } from "@/store";
 import { wsService } from "@/services/websocket";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
+import TradeModal from "@/components/ui/TradeModal";
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -50,6 +50,7 @@ export default function RootLayout() {
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />
+          <TradeModal />
         </SafeAreaView>
       </QueryClientProvider>
     </Provider>

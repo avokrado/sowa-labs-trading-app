@@ -1,6 +1,6 @@
 import { createSlice, nanoid, PayloadAction } from "@reduxjs/toolkit";
 
-interface Trade {
+export interface Trade {
   id: string;
   type: "BUY" | "SELL";
   amountInBTC: number;
