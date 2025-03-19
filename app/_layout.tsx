@@ -28,16 +28,7 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  useEffect(() => {
-    // Connect to WebSocket when component mounts
-    wsService.connect();
-
-    // Cleanup WebSocket connection when component unmounts
-    return () => {
-      wsService.disconnect();
-    };
-  }, []);
-
+  
   if (!loaded) {
     return null;
   }
