@@ -5,12 +5,11 @@ import { View, Text } from "react-native";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 function Header() {
-  const currentBalance = useSelector(
-    (state: RootState) => state.portfolio.btcBalance
+  const currentBTCBalance = useSelector(
+    (state: RootState) => state.wallet.btcBalance
   );
-
-  const currentPrice = useSelector(
-    (state: RootState) => state.price.currentPrice
+  const currentEURBalance = useSelector(
+    (state: RootState) => state.wallet.eurBalance
   );
 
   return (
@@ -27,10 +26,11 @@ function Header() {
       <View style={{ gap: 4, alignItems: "flex-end" }}>
         <Text>Available</Text>
         <Text>
-          {currentBalance} <Text style={{ fontWeight: "semibold" }}>BTC</Text>
+          {currentBTCBalance}{" "}
+          <Text style={{ fontWeight: "semibold" }}>BTC</Text>
         </Text>
         <Text>
-          {formatCurrency(currentBalance * currentPrice)}{" "}
+          {formatCurrency(currentEURBalance)}{" "}
           <Text style={{ fontWeight: "semibold" }}>€</Text>
         </Text>
       </View>
