@@ -35,7 +35,7 @@ function Chart() {
         ],
       }}
       width={Dimensions.get("window").width}
-      height={Dimensions.get("window").height * 0.5}
+      height={Dimensions.get("window").height * 0.4}
       yAxisLabel="€"
       withDots={false}
       chartConfig={{
@@ -48,9 +48,6 @@ function Chart() {
         decimalPlaces: 0,
         color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
         labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        style: {
-          borderRadius: 16,
-        },
       }}
       bezier
       withVerticalLines={false}
