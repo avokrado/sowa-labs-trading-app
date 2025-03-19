@@ -1,34 +1,18 @@
-import React, { useMemo } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import React from "react";
+import { View, Text, ScrollView } from "react-native";
 import Chart from "@/components/ui/Chart";
 import { RootState } from "@/store";
 import { useSelector } from "react-redux";
-import { formatCurrency } from "@/utils/formatCurrency";
-import { calculatePnL } from "@/utils/calculatePnL";
 import { openModal } from "@/store/modalSlice";
 import { useDispatch } from "react-redux";
 import Button from "@/components/ui/Button";
+import Pnl from "@/components/ui/PnL";
+
 function HomePage() {
   const dispatch = useDispatch();
-  const currentPrice = useSelector(
-    (state: RootState) => state.price.currentPrice
-  );
-  const btcBalance = useSelector(
-    (state: RootState) => state.portfolio.btcBalance
-  );
+
   const trades = useSelector((state: RootState) => state.trades.trades);
-
-  const formattedPrice = useMemo(() => {
-    return formatCurrency(currentPrice);
-  }, [currentPrice]);
-
-  const pnL = useMemo(() => {
-    return calculatePnL(trades, btcBalance, currentPrice);
-  }, [trades, btcBalance, currentPrice]);
-
-  const formattedTotalPnL = useMemo(() => {
-    return formatCurrency(pnL.totalPnL);
-  }, [pnL.totalPnL]);
+  const wsStatus = useSelector((state: RootState) => state.price.wsStatus);
 
   function handleTradePress() {
     dispatch(openModal());
@@ -39,33 +23,70 @@ function HomePage() {
       style={{
         flex: 1,
         alignItems: "center",
-        backgroundColor: "white",
-        paddingHorizontal: 32,
+        backgroundColor: "green",
+        padding: 16,
+        gap: 16,
       }}
     >
-      <View
-        style={{
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ fontSize: 24, fontWeight: "semibold" }}>BTC</Text>
-        <Text style={{ fontSize: 24, fontWeight: "semibold" }}>
-          {formattedPrice} €
-        </Text>
-        <Text
+      <Pnl />
+      <View style={{ backgroundColor: "blue", gap: 8 }}>
+        <Chart />
+        <View
           style={{
-            fontSize: 16,
-            color: pnL.totalPnL >= 0 ? "#16a34a" : "#dc2626",
+            flexDirection: "row",
+            backgroundColor: "blue",
+            paddingHorizontal: 32,
           }}
         >
-          PnL: {formattedTotalPnL} €
-        </Text>
+          <Button
+            onPress={handleTradePress}
+            title="Trade"
+            disabled={wsStatus !== "connected"}
+          />
+        </View>
       </View>
-      <Chart />
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <Button onPress={handleTradePress} title="Trade" disabled={!currentPrice} />
-      </View>
+      <ScrollView
+        style={{
+          gap: 10,
+          backgroundColor: "#edeff0",
+          borderRadius: 10,
+          padding: 10,
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        {trades.length === 0 ? (
+          <View style={{ alignItems: "center" }}>
+            <Text>No trades yet</Text>
+          </View>
+        ) : (
+          trades.map((trade) => (
+            <View
+              key={trade.id}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                height: 24,
+                backgroundColor: "red",
+                alignItems: "center",
+              }}
+            >
+              <Text>{trade.type}</Text>
+              <Text>
+                {trade.type === "BUY" ? "+" : "-"}
+                {trade.amountInBTC.toFixed(4)} BTC /{" "}
+                {trade.type === "BUY" ? "-" : "+"}
+                {trade.amountInEUR} €
+              </Text>
+              <Text>
+                {new Date(trade.timestamp).toLocaleTimeString("en-US", {
+                  hour12: false,
+                })}
+              </Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
