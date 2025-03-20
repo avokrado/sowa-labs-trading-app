@@ -1,18 +1,18 @@
 import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import Chart from "@/components/ui/Chart";
-import { useGetBitcoinPriceQuery } from "@/store/api/bitcoinPriceApi";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store";
+import { RootState, AppDispatch } from "@/store";
 import { openModal } from "@/store/modalSlice";
 import { useDispatch } from "react-redux";
 import Button from "@/components/ui/Button";
 import BitcoinPriceModule from "@/modules/bitcoin-price";
 import Pnl from "@/components/ui/PnL";
-import { updatePrice } from "@/store/priceSlice";
+import { updatePrice, getHistoricalData } from "@/store/priceSlice";
+import { setTradeBTCprice } from "@/store/tradesSlice";
 
 function HomePage() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   // Ideally this would be a websocket connection
   React.useEffect(() => {
@@ -28,9 +28,31 @@ function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
+  React.useEffect(() => {
+    dispatch(getHistoricalData());
+  }, [dispatch]);
+
   const trades = useSelector((state: RootState) => state.trades.trades);
 
+  const currentPrice = useSelector(
+    (state: RootState) => state.price.currentPrice
+  );
+  const chartDataStatus = useSelector(
+    (state: RootState) => state.price.historicalData.status
+  );
+  console.log(chartDataStatus);
+
   function handleTradePress() {
+    /* 
+      Sets the BTC price for the current trade.
+      Note: In a production environment, we would:
+      1. Fetch real-time BTC price when placing the trade
+      2. Recalculate BTC amount
+      3. Require user confirmation
+      
+      Using static price for demo purposes to go along with not over-engineering the solution
+    */
+    dispatch(setTradeBTCprice(currentPrice));
     dispatch(openModal());
   }
 
@@ -45,17 +67,23 @@ function HomePage() {
       }}
     >
       <Pnl />
-      <View style={{ backgroundColor: "blue", gap: 8 }}>
-        <Chart />
-        <View
-          style={{
-            flexDirection: "row",
-            backgroundColor: "blue",
-            paddingHorizontal: 32,
-          }}
-        >
-          <Button onPress={handleTradePress} title="Trade" />
-        </View>
+      <View style={{ backgroundColor: "white", gap: 8 }}>
+        {chartDataStatus === "loading" ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <>
+            <Chart />
+            <View
+              style={{
+                flexDirection: "row",
+                backgroundColor: "blue",
+                paddingHorizontal: 32,
+              }}
+            >
+              <Button onPress={handleTradePress} title="Trade" />
+            </View>
+          </>
+        )}
       </View>
       <ScrollView
         style={{
