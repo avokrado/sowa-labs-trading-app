@@ -18,10 +18,12 @@ export interface Trade {
 
 interface TradesState {
   trades: Trade[];
+  tradeBTCprice: number;
 }
 
 const initialState: TradesState = {
   trades: [],
+  tradeBTCprice: 0,
 };
 
 const tradesSlice = createSlice({
@@ -31,6 +33,7 @@ const tradesSlice = createSlice({
     addTrade: {
       reducer(state, action: PayloadAction<Trade>) {
         state.trades.unshift(action.payload);
+        state.tradeBTCprice = 0;
       },
       prepare(
         type: "BUY" | "SELL",
@@ -50,14 +53,18 @@ const tradesSlice = createSlice({
         };
       },
     },
+    setTradeBTCprice: (state, action: PayloadAction<number>) => {
+      state.tradeBTCprice = action.payload;
+    },
   },
 });
 
-export const { addTrade } = tradesSlice.actions;
+export const { addTrade, setTradeBTCprice } = tradesSlice.actions;
 
-/**
- * BUY thunk
- */
+/* 
+Here we should call an API to execute the trade
+In our case we just update the state, so thunk is just for demonstration purposes
+*/
 export const executeBuyTrade = createAsyncThunk(
   "trades/executeBuy",
   async (
@@ -66,6 +73,10 @@ export const executeBuyTrade = createAsyncThunk(
   ) => {
     if (!params.amountInBTC || !params.amountInEUR) {
       return rejectWithValue("Invalid amount");
+    }
+
+    if (params.amountInBTC < 1e-8) {
+      return rejectWithValue("Amount too small");
     }
 
     const state = getState() as RootState;
@@ -81,11 +92,6 @@ export const executeBuyTrade = createAsyncThunk(
       (btcBalance + params.amountInBTC).toFixed(8)
     );
 
-    // If it's so tiny that it's below 1 satoshi, force to zero:
-    if (Math.abs(newBtcBalance) < 1e-8) {
-      newBtcBalance = 0;
-    }
-
     const newEurBalance = parseFloat(
       (eurBalance - params.amountInEUR).toFixed(2)
     );
@@ -100,9 +106,10 @@ export const executeBuyTrade = createAsyncThunk(
   }
 );
 
-/**
- * SELL thunk
- */
+/* 
+Here we should call an API to execute the trade
+In our case we just update the state, so thunk is just for demonstration purposes
+*/
 export const executeSellTrade = createAsyncThunk(
   "trades/executeSell",
   async (
@@ -111,6 +118,9 @@ export const executeSellTrade = createAsyncThunk(
   ) => {
     if (!params.amountInBTC || !params.amountInEUR) {
       return rejectWithValue("Invalid amount");
+    }
+    if (params.amountInBTC < 1e-8) {
+      return rejectWithValue("Amount too small");
     }
     const state = getState() as RootState;
     const { btcBalance, eurBalance } = state.wallet;

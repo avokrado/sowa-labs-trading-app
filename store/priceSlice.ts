@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface ChartData {
   timestamp: number;
@@ -6,34 +6,79 @@ interface ChartData {
 }
 interface PriceState {
   currentPrice: number;
-  chartData: ChartData[];
-  error: string | null;
+  historicalData: {
+    chartData: ChartData[];
+    error: string | null;
+    status: "idle" | "loading" | "succeeded" | "failed";
+  };
 }
 
 const initialState: PriceState = {
   currentPrice: 0,
-  chartData: [],
-  error: null,
+  historicalData: {
+    chartData: [],
+    error: null,
+    status: "idle",
+  },
 };
+
+export const getHistoricalData = createAsyncThunk(
+  "price/getHistoricalData",
+  async (_, { rejectWithValue }) => {
+    try {
+      // API URL should be dynamic based on the coinId and days. Well keep it hardcoded for demo
+      const response = await fetch(
+        "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=eur&days=1"
+      );
+      const data = await response.json();
+      return data.prices;
+    } catch (error) {
+      return rejectWithValue("Failed to fetch historical data");
+    }
+  }
+);
 
 const priceSlice = createSlice({
   name: "price",
   initialState,
   reducers: {
     updateChartData: (state, action: PayloadAction<number[][]>) => {
-      state.chartData = action.payload.map(([timestamp, price]) => ({
-        timestamp,
-        price,
-      }));
+      state.historicalData.chartData = action.payload.map(
+        ([timestamp, price]) => ({
+          timestamp,
+          price,
+        })
+      );
     },
     updatePrice: (state, action: PayloadAction<number>) => {
       state.currentPrice = action.payload;
     },
-    setError: (state, action: PayloadAction<string>) => {
-      state.error = action.payload;
-    },
+  },
+  // This is the extra reducers for the async thunk responsible for fetching the historical data
+  extraReducers: (builder) => {
+    // This is the case for when the data is fetched successfully
+    builder.addCase(getHistoricalData.fulfilled, (state, action) => {
+      state.historicalData.chartData = action.payload.map(
+        ([timestamp, price]: [number, number]) => ({
+          timestamp,
+          price,
+        })
+      );
+      state.historicalData.error = null;
+      state.historicalData.status = "succeeded";
+    });
+    // This is the case for when the data is not fetched successfully
+    builder.addCase(getHistoricalData.rejected, (state, action) => {
+      state.historicalData.error = action.payload as string;
+      state.historicalData.status = "failed";
+    });
+    // This is the case for when the data is being fetched
+    builder.addCase(getHistoricalData.pending, (state) => {
+      state.historicalData.error = null;
+      state.historicalData.status = "loading";
+    });
   },
 });
 
-export const { updateChartData, updatePrice, setError } = priceSlice.actions;
+export const { updateChartData, updatePrice } = priceSlice.actions;
 export default priceSlice.reducer;
