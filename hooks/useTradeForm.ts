@@ -1,77 +1,98 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import { validateDecimalInput } from "@/utils/decimalInput";
+import { formatDecimalInput } from "@/utils/decimalInput";
+import { debounce } from "lodash";
+
+const MIN_BTC_AMOUNT = 0.00000001; // 1 satoshi
+const MAX_EUR_DECIMALS = 2;
+const MAX_BTC_DECIMALS = 8;
+const DEBOUNCE_MS = 500;
 
 export function useTradeForm() {
-  const currentPrice = useSelector(
-    (state: RootState) => state.price.currentPrice
+  const currentBtcTradePrice = useSelector(
+    (state: RootState) => state.trades.tradeBTCprice
   );
-  
+
   const [eurAmount, setEurAmount] = useState<string>("");
   const [btcAmount, setBtcAmount] = useState<string>("");
-  
-  // Whenever eurAmount changes, update btcAmount
-  useEffect(() => {
-    if (!currentPrice) return;
+  const [btcError, setBtcError] = useState<string>("");
 
-    const parsed = parseFloat(eurAmount);
-    if (!isNaN(parsed)) {
-      const newBtc = parsed / currentPrice;
-      // Round to 8 decimal places
-      const roundedBtc = Math.round(newBtc * 1e8) / 1e8;
-      setBtcAmount(roundedBtc.toString());
-    } else {
+  const calculateBtcFromEur = debounce((eurValue: string) => {
+    if (!currentBtcTradePrice || !eurValue) {
       setBtcAmount("");
+      setBtcError("");
+      return;
     }
-  }, [eurAmount, currentPrice]);
+
+    const eurNum = parseFloat(eurValue);
+    const btcNum = eurNum / currentBtcTradePrice;
+    const roundedBtc = Math.round(btcNum * 1e8) / 1e8;
+
+    setBtcAmount(roundedBtc.toString());
+    setBtcError(
+      roundedBtc < MIN_BTC_AMOUNT
+        ? `Minimum amount is ${MIN_BTC_AMOUNT} BTC`
+        : ""
+    );
+  }, DEBOUNCE_MS);
+
+  const calculateEurFromBtc = debounce((btcValue: string) => {
+    if (!currentBtcTradePrice || !btcValue) {
+      setEurAmount("");
+      setBtcError("");
+      return;
+    }
+
+    const btcNum = parseFloat(btcValue);
+    const eurNum = btcNum * currentBtcTradePrice;
+    const roundedEur = Math.round(eurNum * 100) / 100;
+
+    setEurAmount(roundedEur.toString());
+    setBtcError(
+      btcNum < MIN_BTC_AMOUNT ? `Minimum amount is ${MIN_BTC_AMOUNT} BTC` : ""
+    );
+  }, DEBOUNCE_MS);
+
+  useEffect(() => {
+    return () => {
+      calculateEurFromBtc.cancel();
+      calculateBtcFromEur.cancel();
+    };
+  }, []);
 
   const handleEurChange = (text: string) => {
-    const cleaned = text.replace(/[^0-9.]/g, "");
-    // Ensure only 2 decimal places for EUR
-    const parts = cleaned.split('.');
-    if (parts[1]?.length > 2) {
-      parts[1] = parts[1].slice(0, 2);
-      setEurAmount(parts.join('.'));
-    } else {
-      setEurAmount(cleaned);
+    const formattedText = formatDecimalInput(text);
+    if (validateDecimalInput(formattedText, MAX_EUR_DECIMALS)) {
+      setEurAmount(formattedText);
+      calculateBtcFromEur(formattedText);
     }
   };
 
   const handleBtcChange = (text: string) => {
-    const cleaned = text.replace(/[^0-9.]/g, "");
-    // Ensure only 8 decimal places for BTC
-    const parts = cleaned.split('.');
-    if (parts[1]?.length > 8) {
-      parts[1] = parts[1].slice(0, 8);
-      setBtcAmount(parts.join('.'));
-    } else {
-      setBtcAmount(cleaned);
-    }
-
-    if (currentPrice) {
-      const parsed = parseFloat(cleaned);
-      if (!isNaN(parsed)) {
-        const newEur = parsed * currentPrice;
-        // Round to 2 decimal places
-        const roundedEur = Math.round(newEur * 100) / 100;
-        setEurAmount(roundedEur.toString());
-      } else {
-        setEurAmount("");
-      }
+    const formattedText = formatDecimalInput(text);
+    if (validateDecimalInput(formattedText, MAX_BTC_DECIMALS)) {
+      setBtcAmount(formattedText);
+      calculateEurFromBtc(formattedText);
     }
   };
 
   const resetForm = () => {
     setEurAmount("");
     setBtcAmount("");
+    setBtcError("");
+    calculateEurFromBtc.cancel();
+    calculateBtcFromEur.cancel();
   };
 
   return {
     eurAmount,
     btcAmount,
-    currentPrice,
+    btcError,
+    currentBtcTradePrice,
     handleEurChange,
     handleBtcChange,
-    resetForm
+    resetForm,
   };
-} 
+}

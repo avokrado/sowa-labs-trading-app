@@ -19,36 +19,40 @@ import { useTrade } from "@/hooks/useTrade";
 export default function TradeModal() {
   const dispatch = useDispatch();
   const isOpen = useSelector((state: RootState) => state.modal.isOpen);
-  const wsStatus = useSelector((state: RootState) => state.price.wsStatus);
-  const {
-    eurAmount,
-    btcAmount,
-    currentPrice,
-    handleEurChange,
-    handleBtcChange,
-    resetForm,
-  } = useTradeForm();
+
+  const { eurAmount, btcAmount, handleEurChange, handleBtcChange, resetForm } =
+    useTradeForm();
 
   const { buyError, sellError, resetErrors, handleBuy, handleSell } =
     useTrade();
 
   function handleCloseModal() {
-    dispatch(closeModal());
     resetErrors();
     resetForm();
+    dispatch(closeModal());
   }
 
   const executeBuy = () => {
     const eurVal = parseFloat(eurAmount);
     const btcVal = parseFloat(btcAmount);
-    handleBuy({ eurVal, btcVal, currentPrice, onSuccess: handleCloseModal });
+    handleBuy({ eurVal, btcVal, onSuccess: handleCloseModal });
   };
 
   const executeSell = () => {
     const eurVal = parseFloat(eurAmount);
     const btcVal = parseFloat(btcAmount);
-    handleSell({ eurVal, btcVal, currentPrice, onSuccess: handleCloseModal });
+    handleSell({ eurVal, btcVal, onSuccess: handleCloseModal });
   };
+
+  function onHandleEurChange(text: string) {
+    resetErrors();
+    handleEurChange(text);
+  }
+
+  function onHandleBtcChange(text: string) {
+    resetErrors();
+    handleBtcChange(text);
+  }
 
   return (
     <Modal
@@ -75,7 +79,7 @@ export default function TradeModal() {
           <View style={styles.inputRow}>
             <TextInput
               value={eurAmount}
-              onChangeText={handleEurChange}
+              onChangeText={onHandleEurChange}
               // Use decimal-pad on iOS, numeric on Android
               keyboardType={
                 Platform.select({
@@ -92,7 +96,7 @@ export default function TradeModal() {
           <View style={styles.inputRow}>
             <TextInput
               value={btcAmount}
-              onChangeText={handleBtcChange}
+              onChangeText={onHandleBtcChange}
               keyboardType={
                 Platform.select({
                   ios: "decimal-pad",
@@ -109,13 +113,13 @@ export default function TradeModal() {
               onPress={executeBuy}
               title="Buy"
               error={buyError}
-              disabled={wsStatus !== "connected" || !eurAmount || !btcAmount}
+              disabled={!eurAmount || !btcAmount}
             />
             <Button
               onPress={executeSell}
               title="Sell"
               error={sellError}
-              disabled={wsStatus !== "connected" || !eurAmount || !btcAmount}
+              disabled={!eurAmount || !btcAmount}
             />
           </View>
         </View>

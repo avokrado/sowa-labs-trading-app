@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store";
 import { executeBuyTrade, executeSellTrade } from "@/store/tradesSlice";
 import { closeModal } from "@/store/modalSlice";
 
@@ -8,6 +8,9 @@ export function useTrade() {
   const dispatch = useDispatch<AppDispatch>();
   const [buyError, setBuyError] = useState<string | undefined>(undefined);
   const [sellError, setSellError] = useState<string | undefined>(undefined);
+  const currentBtcTradePrice = useSelector(
+    (state: RootState) => state.trades.tradeBTCprice
+  );
 
   const resetErrors = () => {
     setBuyError(undefined);
@@ -17,18 +20,17 @@ export function useTrade() {
   const handleBuy = async (params: {
     eurVal: number;
     btcVal: number;
-    currentPrice: number;
     onSuccess: () => void;
   }) => {
     resetErrors();
-    const { eurVal, btcVal, currentPrice, onSuccess } = params;
+    const { eurVal, btcVal, onSuccess } = params;
 
     try {
       await dispatch(
         executeBuyTrade({
           amountInBTC: btcVal,
           amountInEUR: eurVal,
-          price: currentPrice,
+          price: currentBtcTradePrice,
         })
       ).unwrap();
 
@@ -42,18 +44,17 @@ export function useTrade() {
   const handleSell = async (params: {
     eurVal: number;
     btcVal: number;
-    currentPrice: number;
     onSuccess: () => void;
   }) => {
     resetErrors();
-    const { eurVal, btcVal, currentPrice, onSuccess } = params;
+    const { eurVal, btcVal, onSuccess } = params;
 
     try {
       await dispatch(
         executeSellTrade({
           amountInBTC: btcVal,
           amountInEUR: eurVal,
-          price: currentPrice,
+          price: currentBtcTradePrice,
         })
       ).unwrap();
 
