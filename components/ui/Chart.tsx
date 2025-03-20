@@ -1,26 +1,13 @@
 import React from "react";
 import { Dimensions, Text } from "react-native";
 import { LineChart } from "react-native-chart-kit";
-import { useQuery } from "@tanstack/react-query";
-import { useDispatch, useSelector } from "react-redux";
-import { updateChartData } from "@/store/priceSlice";
+import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 
 function Chart() {
-  const dispatch = useDispatch();
-  const chartData = useSelector((state: RootState) => state.price.chartData);
-  useQuery({
-    queryKey: ["chart-data"],
-    queryFn: async () => {
-      const response = await fetch(
-        "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=eur&days=1"
-      );
-      const data = await response.json();
-      dispatch(updateChartData(data.prices));
-      return data.prices;
-    },
-    enabled: chartData.length === 0,
-  });
+  const chartData = useSelector(
+    (state: RootState) => state.price.historicalData.chartData
+  );
 
   return chartData.length > 0 ? (
     <LineChart
