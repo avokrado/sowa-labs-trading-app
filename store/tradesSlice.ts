@@ -111,7 +111,7 @@ export const executeSellTrade = createAsyncThunk(
     }: { amountInBTC: number; amountInEUR: number; price: number },
     { dispatch, getState, rejectWithValue }
   ) => {
-    const state = getState() as any;
+    const state = getState() as RootState;
     const { btcBalanceInSats, eurBalance } = state.wallet;
 
     // 1) Convert user decimal to satoshis
