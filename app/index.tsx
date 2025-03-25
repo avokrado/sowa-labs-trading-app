@@ -1,20 +1,32 @@
 import React from "react";
-import { View, Text, ScrollView, ActivityIndicator } from "react-native";
-import Chart from "@/components/ui/Chart";
-import { useSelector } from "react-redux";
-import { RootState, AppDispatch } from "@/store";
+import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store";
 import { openModal } from "@/store/modalSlice";
-import { useDispatch } from "react-redux";
-import Button from "@/components/ui/Button";
 import BitcoinPriceModule from "@/modules/bitcoin-price";
-import Pnl from "@/components/ui/PnL";
+import Pnl from "@/components/PnL";
 import { updatePrice, getHistoricalData } from "@/store/priceSlice";
 import { setTradeBTCprice } from "@/store/tradesSlice";
 
+import TradesList from "@/components/TradesList";
+import Button from "@/components/ui/Button";
+// import D3Chart from "@/components/ui/D3Chart";
+
+import Chart from "@/components/Chart";
+import { COLORS } from "@/constants/colors";
+
 function HomePage() {
   const dispatch = useDispatch<AppDispatch>();
+  const currentPrice = useSelector(
+    (state: RootState) => state.price.currentPrice
+  );
 
-  // Ideally this would be a websocket connection
+  const historicalData = useSelector(
+    (state: RootState) => state.price.historicalData
+  );
+
+  // Fetch the current price of Bitcoin every 5 seconds
+  // Ideally this would be a websocket connection, but for simplicity we're calling native module every 5 seconds
   React.useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -32,102 +44,63 @@ function HomePage() {
     dispatch(getHistoricalData());
   }, [dispatch]);
 
-  const trades = useSelector((state: RootState) => state.trades.trades);
-
-  const currentPrice = useSelector(
-    (state: RootState) => state.price.currentPrice
-  );
-  const chartDataStatus = useSelector(
-    (state: RootState) => state.price.historicalData.status
-  );
-  console.log(chartDataStatus);
-
+  // For now, we're using the current price to set the trade price
+  // In real life, solution would be much more sophisticated.
+  // We would refetch the current price once placing a trade, recalculate, and proceed with trade only if user confirms new price
+  // For simplicity and to not over-engineer the solution, we will be using the price from this moment
   function handleTradePress() {
-    /* 
-      Sets the BTC price for the current trade.
-      Note: In a production environment, we would:
-      1. Fetch real-time BTC price when placing the trade
-      2. Recalculate BTC amount
-      3. Require user confirmation
-      
-      Using static price for demo purposes to go along with not over-engineering the solution
-    */
     dispatch(setTradeBTCprice(currentPrice));
     dispatch(openModal());
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        backgroundColor: "green",
-        padding: 16,
-        gap: 16,
-      }}
-    >
+    <View style={styles.container}>
       <Pnl />
-      <View style={{ backgroundColor: "white", gap: 8 }}>
-        {chartDataStatus === "loading" ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+      <View style={styles.chartContainer}>
+        {historicalData.status === "loading" ? (
+          <ActivityIndicator size="large" color={COLORS.chart.line} />
+        ) : historicalData.status === "failed" ? (
+          <Text style={styles.errorText}>Failed to load chart data</Text>
         ) : (
           <>
-            <Chart />
-            <View
-              style={{
-                flexDirection: "row",
-                backgroundColor: "blue",
-                paddingHorizontal: 32,
-              }}
-            >
-              <Button onPress={handleTradePress} title="Trade" />
-            </View>
+            <Chart
+              chartData={historicalData.chartData}
+              lastClose={historicalData.lastClose}
+            />
+            <Button onPress={handleTradePress} title="Trade" />
           </>
         )}
+
+        {/* Attempt of using D3Chart, but it's not working as expected. Leaving it here regardless for possible prestantaional purposes. In real life, this is dead code that should be removed */}
+        {/*   <View style={{ height: 250 }}>
+            <D3Chart />
+          </View> */}
       </View>
-      <ScrollView
-        style={{
-          gap: 10,
-          backgroundColor: "#edeff0",
-          padding: 10,
-          width: "100%",
-          height: "100%",
-        }}
-      >
-        {trades.length === 0 ? (
-          <View style={{ alignItems: "center" }}>
-            <Text>No trades yet</Text>
-          </View>
-        ) : (
-          trades.map((trade) => (
-            <View
-              key={trade.id}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                height: 24,
-                backgroundColor: "red",
-                alignItems: "center",
-              }}
-            >
-              <Text>{trade.type}</Text>
-              <Text>
-                {trade.type === "BUY" ? "+" : "-"}
-                {trade.amountInBTC.toFixed(4)} BTC /{" "}
-                {trade.type === "BUY" ? "-" : "+"}
-                {trade.amountInEUR} €
-              </Text>
-              <Text>
-                {new Date(trade.timestamp).toLocaleTimeString("en-US", {
-                  hour12: false,
-                })}
-              </Text>
-            </View>
-          ))
-        )}
-      </ScrollView>
+      <View style={styles.tradesContainer}>
+        <TradesList />
+      </View>
     </View>
   );
 }
-
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "white",
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  chartContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    flexGrow: 1,
+  },
+  tradesContainer: {
+    maxHeight: 200,
+    width: "100%",
+  },
+  errorText: { color: COLORS.text.error, textAlign: "center" },
+});
 export default HomePage;
