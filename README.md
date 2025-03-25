@@ -13,4 +13,4 @@ This is a simple trading app that allows you to buy and sell BTC.
 
 ## How to run the tests
 
-1. Run `npm test`
+1. Run `npm run test`
