@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface ChartData {
+export interface ChartData {
   timestamp: number;
   price: number;
 }
@@ -8,6 +8,7 @@ interface PriceState {
   currentPrice: number;
   historicalData: {
     chartData: ChartData[];
+    lastClose: number;
     error: string | null;
     status: "idle" | "loading" | "succeeded" | "failed";
   };
@@ -17,6 +18,7 @@ const initialState: PriceState = {
   currentPrice: 0,
   historicalData: {
     chartData: [],
+    lastClose: 0,
     error: null,
     status: "idle",
   },
@@ -26,14 +28,34 @@ export const getHistoricalData = createAsyncThunk(
   "price/getHistoricalData",
   async (_, { rejectWithValue }) => {
     try {
-      // API URL should be dynamic based on the coinId and days. Well keep it hardcoded for demo
       const response = await fetch(
         "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=eur&days=1"
       );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
-      return data.prices;
+
+      // Validate the response data structure
+      if (!data || !Array.isArray(data.prices) || data.prices.length === 0) {
+        throw new Error("Invalid data format received from API");
+      }
+
+      const prices = data.prices;
+      const lastClose = prices[prices.length - 1][1];
+
+      return {
+        prices,
+        lastClose,
+      };
     } catch (error) {
-      return rejectWithValue("Failed to fetch historical data");
+      return rejectWithValue(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch historical data"
+      );
     }
   }
 );
@@ -58,12 +80,13 @@ const priceSlice = createSlice({
   extraReducers: (builder) => {
     // This is the case for when the data is fetched successfully
     builder.addCase(getHistoricalData.fulfilled, (state, action) => {
-      state.historicalData.chartData = action.payload.map(
+      state.historicalData.chartData = action.payload.prices.map(
         ([timestamp, price]: [number, number]) => ({
           timestamp,
           price,
         })
       );
+      state.historicalData.lastClose = Math.round(action.payload.lastClose);
       state.historicalData.error = null;
       state.historicalData.status = "succeeded";
     });

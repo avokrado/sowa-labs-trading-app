@@ -1,29 +1,34 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { SATS_PER_BTC } from "@/constants/satoshi";
 
 interface WalletState {
-  btcBalance: number;
+  btcBalanceInSats: number; // store BTC as integer satoshis
   eurBalance: number;
 }
 
 const initialState: WalletState = {
-  btcBalance: 0,
-  eurBalance: 100,
+  btcBalanceInSats: 0,
+  eurBalance: 100, // 100 EUR start balance
 };
 
 const walletSlice = createSlice({
   name: "wallet",
   initialState,
   reducers: {
-    updateBalance: (
-      state: WalletState,
-      action: PayloadAction<{ btcBalance: number; eurBalance: number }>
+    // Update BTC and EUR balances
+    updateWalletBalance: (
+      state,
+      action: PayloadAction<{
+        btcBalanceInSats: number;
+        eurBalance: number;
+      }>
     ) => {
-      const { btcBalance, eurBalance } = action.payload;
-      state.btcBalance = btcBalance;
+      const { btcBalanceInSats, eurBalance } = action.payload;
+      state.btcBalanceInSats = btcBalanceInSats;
       state.eurBalance = eurBalance;
     },
   },
 });
 
-export const { updateBalance } = walletSlice.actions;
+export const { updateWalletBalance } = walletSlice.actions;
 export default walletSlice.reducer;

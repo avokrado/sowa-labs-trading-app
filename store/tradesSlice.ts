@@ -4,7 +4,8 @@ import {
   nanoid,
   PayloadAction,
 } from "@reduxjs/toolkit";
-import { updateBalance } from "./walletSlice";
+import { btcToSats } from "@/utils/convertSatoshis";
+import { updateWalletBalance } from "./walletSlice";
 import { RootState } from "./index";
 
 export interface Trade {
@@ -35,6 +36,7 @@ const tradesSlice = createSlice({
         state.trades.unshift(action.payload);
         state.tradeBTCprice = 0;
       },
+      // This will run before the reducer. We will use it to prepare the payload: inject id and timestamp
       prepare(
         type: "BUY" | "SELL",
         btcAmount: number,
@@ -63,7 +65,7 @@ export const { addTrade, setTradeBTCprice } = tradesSlice.actions;
 
 /* 
 Here we should call an API to execute the trade
-In our case we just update the state, so thunk is just for demonstration purposes
+In our case we just update the state, so usage of thunk is just for demonstration purposes. It could be implemented with regular reducers
 */
 export const executeBuyTrade = createAsyncThunk(
   "trades/executeBuy",
@@ -71,79 +73,66 @@ export const executeBuyTrade = createAsyncThunk(
     params: { amountInBTC: number; amountInEUR: number; price: number },
     { dispatch, getState, rejectWithValue }
   ) => {
-    if (!params.amountInBTC || !params.amountInEUR) {
-      return rejectWithValue("Invalid amount");
-    }
-
-    if (params.amountInBTC < 1e-8) {
-      return rejectWithValue("Amount too small");
-    }
+    const { amountInEUR, amountInBTC, price } = params;
 
     const state = getState() as RootState;
-    const { btcBalance, eurBalance } = state.wallet;
-
-    // Validate EUR balance first
-    if (params.amountInEUR > eurBalance) {
+    const { btcBalanceInSats, eurBalance } = state.wallet;
+    // Validate user has enough EUR
+    if (amountInEUR > eurBalance) {
       return rejectWithValue("Insufficient EUR balance");
     }
 
-    // After rounding with toFixed(8):
-    let newBtcBalance = parseFloat(
-      (btcBalance + params.amountInBTC).toFixed(8)
-    );
+    // Convert the user’s BTC decimal to integer satoshis
+    const satsToBuy = btcToSats(amountInBTC);
 
-    const newEurBalance = parseFloat(
-      (eurBalance - params.amountInEUR).toFixed(2)
-    );
+    // Calculate new wallet totals, in integer satoshis for BTC
+    const newBtcBalanceInSats = btcBalanceInSats + satsToBuy;
+    const newEurBalance = eurBalance - amountInEUR;
 
-    // Dispatch trade + updated balances
+    // 4) Dispatch the trade + update the wallet
+    dispatch(addTrade("BUY", amountInBTC, amountInEUR, price));
     dispatch(
-      addTrade("BUY", params.amountInBTC, params.amountInEUR, params.price)
-    );
-    dispatch(
-      updateBalance({ btcBalance: newBtcBalance, eurBalance: newEurBalance })
+      updateWalletBalance({
+        btcBalanceInSats: newBtcBalanceInSats,
+        eurBalance: newEurBalance,
+      })
     );
   }
 );
 
-/* 
-Here we should call an API to execute the trade
-In our case we just update the state, so thunk is just for demonstration purposes
-*/
+// Sell thunk
 export const executeSellTrade = createAsyncThunk(
   "trades/executeSell",
   async (
-    params: { amountInBTC: number; amountInEUR: number; price: number },
+    {
+      amountInBTC,
+      amountInEUR,
+      price,
+    }: { amountInBTC: number; amountInEUR: number; price: number },
     { dispatch, getState, rejectWithValue }
   ) => {
-    if (!params.amountInBTC || !params.amountInEUR) {
-      return rejectWithValue("Invalid amount");
-    }
-    if (params.amountInBTC < 1e-8) {
-      return rejectWithValue("Amount too small");
-    }
-    const state = getState() as RootState;
-    const { btcBalance, eurBalance } = state.wallet;
+    const state = getState() as any;
+    const { btcBalanceInSats, eurBalance } = state.wallet;
 
-    // Validate BTC balance
-    if (params.amountInBTC > btcBalance) {
+    // 1) Convert user decimal to satoshis
+    const satsToSell = btcToSats(amountInBTC);
+
+    // 2) Validate we have enough satoshis
+    if (satsToSell > btcBalanceInSats) {
       return rejectWithValue("Insufficient BTC balance");
     }
 
-    // Calculate and round
-    const newBtcBalance = parseFloat(
-      (btcBalance - params.amountInBTC).toFixed(8)
-    );
-    const newEurBalance = parseFloat(
-      (eurBalance + params.amountInEUR).toFixed(2)
-    );
+    // 3) Compute new balances
+    const newBtcBalanceInSats = btcBalanceInSats - satsToSell;
+    const newEurBalance = eurBalance + amountInEUR;
 
-    // Dispatch trade + updated balances
+    // 4) Dispatch the trade + update the wallet
+    dispatch(addTrade("SELL", amountInBTC, amountInEUR, price));
     dispatch(
-      addTrade("SELL", params.amountInBTC, params.amountInEUR, params.price)
-    );
-    dispatch(
-      updateBalance({ btcBalance: newBtcBalance, eurBalance: newEurBalance })
+      updateWalletBalance({
+        btcBalanceInSats: newBtcBalanceInSats,
+        eurBalance: newEurBalance,
+      })
     );
   }
 );
