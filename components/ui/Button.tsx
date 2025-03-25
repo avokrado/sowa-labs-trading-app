@@ -1,3 +1,4 @@
+import { COLORS } from "@/constants/colors";
 import { TouchableOpacity, Text, StyleSheet, View } from "react-native";
 
 interface ButtonProps {
@@ -45,10 +46,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   button: {
-    backgroundColor: "#272947",
+    backgroundColor: COLORS.button.background,
     paddingHorizontal: 20,
     paddingVertical: 22,
-    borderRadius: 8,
+    borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -58,18 +59,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   disabledButton: {
-    backgroundColor: "#27294750",
+    backgroundColor: COLORS.button.disabled,
   },
   disabledText: {
-    color: "#ffffff80",
+    color: COLORS.button.textDisabled,
   },
   errorButton: {
-    backgroundColor: "#ff000020",
+    backgroundColor: COLORS.button.error.background,
     borderWidth: 1,
-    borderColor: "red",
+    borderColor: COLORS.button.error.border,
   },
   errorText: {
-    color: "red",
+    color: COLORS.button.error.text,
     textAlign: "center",
   },
 });
