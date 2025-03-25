@@ -4,7 +4,7 @@ import { executeBuyTrade, executeSellTrade } from "@/store/tradesSlice";
 describe("Wallet redux state tests", () => {
   it("Should initially set wallet to 0 BTC and 100 EUR", () => {
     const state = store.getState().wallet;
-    expect(state.btcBalance).toEqual(0);
+    expect(state.btcBalanceInSats).toEqual(0);
     expect(state.eurBalance).toEqual(100);
   });
 
@@ -13,7 +13,7 @@ describe("Wallet redux state tests", () => {
       executeBuyTrade({ amountInBTC: 1, amountInEUR: 50, price: 50 })
     );
     const state = store.getState().wallet;
-    expect(state.btcBalance).toEqual(1);
+    expect(state.btcBalanceInSats).toEqual(100000000);
     expect(state.eurBalance).toEqual(50); // 100 - 50
   });
 
@@ -23,7 +23,7 @@ describe("Wallet redux state tests", () => {
     );
 
     const state = store.getState().wallet;
-    expect(state.btcBalance).toEqual(0);
+    expect(state.btcBalanceInSats).toEqual(0);
     expect(state.eurBalance).toEqual(100); // 50 + 50
   });
 
@@ -34,7 +34,7 @@ describe("Wallet redux state tests", () => {
 
     const state = store.getState().wallet;
     expect(result.payload).toBe("Insufficient EUR balance");
-    expect(state.btcBalance).toEqual(0);
+    expect(state.btcBalanceInSats).toEqual(0);
     expect(state.eurBalance).toEqual(100);
   });
 
@@ -45,7 +45,7 @@ describe("Wallet redux state tests", () => {
 
     expect(result.payload).toBe("Insufficient BTC balance");
     const state = store.getState().wallet;
-    expect(state.btcBalance).toEqual(0);
+    expect(state.btcBalanceInSats).toEqual(0);
     expect(state.eurBalance).toEqual(100);
   });
 });

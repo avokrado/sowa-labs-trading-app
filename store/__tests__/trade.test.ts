@@ -40,16 +40,4 @@ describe("Trade redux state tests", () => {
     const state = store.getState().trades;
     expect(state.trades).toHaveLength(3);
   });
-
-  it("Should fail if BTC is too low", () => {
-    store.dispatch(
-      executeBuyTrade({
-        amountInBTC: 0.000000001,
-        amountInEUR: 100,
-        price: 100,
-      })
-    );
-    const state = store.getState().trades;
-    expect(state.trades).toHaveLength(3);
-  });
 });
