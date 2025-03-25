@@ -16,6 +16,8 @@ import Button from "@/components/ui/Button";
 import { useTradeForm } from "@/hooks/useTradeForm";
 import { useTrade } from "@/hooks/useTrade";
 import { COLORS } from "@/constants/colors";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 export default function TradeModal() {
   const dispatch = useDispatch();
   const isOpen = useSelector((state: RootState) => state.modal.isOpen);
@@ -72,7 +74,7 @@ export default function TradeModal() {
             onPress={handleCloseModal}
             style={{ alignSelf: "flex-end" }}
           >
-            <Text style={{ fontWeight: "semibold", fontSize: 24 }}>x</Text>
+            <Ionicons name="close" size={24} color={COLORS.text.primary} />
           </TouchableOpacity>
 
           {/* EUR Input */}
